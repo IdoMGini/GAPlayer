@@ -29,16 +29,16 @@
 #define MINIMAZE_MARGIN        30.0f
 #define MINIMAZE_FRAME(window) CGRectMake(CGRectGetMaxX(window.frame) - (MINIMAZE_WIDTH + MINIMAZE_MARGIN), CGRectGetMaxY(window.frame) - (MINIMAZE_HEIGHT + MINIMAZE_MARGIN + 44.0f), MINIMAZE_WIDTH, MINIMAZE_HEIGHT)
 
-NSString * _Nonnull const AVCustomPlayerWillExitFullscreenNotification  =  @"AVCustomPlayerWillExitFullscreenNotification";
+NSString * _Nonnull const AVCustomPlayerWillExitFullscreenNotification  = @"AVCustomPlayerWillExitFullscreenNotification";
 NSString * _Nonnull const AVCustomPlayerWillEnterFullscreenNotification = @"AVCustomPlayerWillEnterFullscreenNotification";
+NSString * _Nonnull const AVCustomPlayerDidChangeSreenModeNotification  = @"AVCustomPlayerDidChangeSreenModeNotification";
 
 @interface GAPlayerController ()<UIGestureRecognizerDelegate>
-
-@property (strong, nonatomic)   GAView         *gaView;
 
 @property (weak, nonatomic)     UIView          *mainViewOriginalParentView;
 @property (assign, nonatomic)   CGRect          mainViewOriginalFrame;
 @property (strong, nonatomic)   GAAVPlayerView    *avPlayerView;
+@property (nonatomic,strong,nullable,readwrite)   GAView  *gaView;
 
 @property (assign, nonatomic)   GAPlayerControllerMode currentMode;
 
@@ -103,6 +103,42 @@ NSString * _Nonnull const AVCustomPlayerWillEnterFullscreenNotification = @"AVCu
     
 }
 
+-(void)addPlayerToSuperview:(UIView *)superView WithPlayer:(AVPlayer *)player targetFrame:(CGRect)frame{
+    
+    [self addPlayerToSuperview:superView WithPlayer:player targetFrame:frame andPlayerControllerMode:GAPlayerControllerModeSmall];
+}
+
+-(void)setViewFrame:(CGRect)frame InSuperView:(UIView *)superView{
+    
+    if ([self gaView]) {
+        
+        [[self gaView] setFrame:frame];
+        
+        [self setMainViewOriginalFrame:frame];
+        [self setMainViewOriginalParentView:superView];
+        
+        if (IS_IPHONE_5_AND_BEFORE) {
+            
+            [[[self gaView] bottomSliderWidthConstrintForIphone6Up] setActive:NO];
+            [[[self gaView] bottomSliderWidthConstrintForIphone5AndDown] setActive:YES];
+            
+            [[[self gaView] topSliderWidthConstrintForIphone6Up] setActive:NO];
+            [[[self gaView] topSliderWidthConstrintForIphone5AndDown] setActive:YES];
+            
+        }
+        else{
+            [[[self gaView] bottomSliderWidthConstrintForIphone6Up] setActive:YES];
+            [[[self gaView] bottomSliderWidthConstrintForIphone5AndDown] setActive:NO];
+            
+            [[[self gaView] topSliderWidthConstrintForIphone6Up] setActive:YES];
+            [[[self gaView] topSliderWidthConstrintForIphone5AndDown] setActive:NO];
+        }
+        
+        [superView addSubview:[self gaView]];
+    }
+    
+}
+
 -(void)play{
     
     if ([self player]) {
@@ -142,6 +178,8 @@ NSString * _Nonnull const AVCustomPlayerWillEnterFullscreenNotification = @"AVCu
     [[[self player] currentItem] removeObserver:self forKeyPath:@"status" context:nil];
     
     [[self player] replaceCurrentItemWithPlayerItem:playerItem];
+    
+    [[[self gaView] activityIndicatorView] startAnimating];
     
     [[[self player] currentItem] addObserver:self forKeyPath:@"status" options:0 context:nil];
 }
@@ -288,11 +326,14 @@ NSString * _Nonnull const AVCustomPlayerWillEnterFullscreenNotification = @"AVCu
     }
 }
 
+
+
 #pragma mark - Privet
 
 -(void)addPlayerToSuperview:(UIView *)superView WithPlayer:(AVPlayer *)player targetFrame:(CGRect)frame andPlayerControllerMode:(GAPlayerControllerMode)mode{
     
     [self setCurrentMode:mode];
+    [self playerDidChangeMode];
     
     [self setViewFrame:frame InSuperView:superView];
     
@@ -300,46 +341,12 @@ NSString * _Nonnull const AVCustomPlayerWillEnterFullscreenNotification = @"AVCu
     
     [self setAVPlayerViewWithPlayer:player];
     
-    [superView addSubview:[self gaView]];
-    
     [[self gaView] layoutIfNeeded];
 
     
     [self performSelector:@selector(hidePlyerControlsWithCompletion:) withObject:nil afterDelay:FADE_DELAY];
 }
 
--(void)setViewFrame:(CGRect)frame InSuperView:(UIView *)superView{
-
-    if ([self gaView]) {
-        
-        [[self gaView] setFrame:frame];
-        
-        [self setMainViewOriginalFrame:frame];
-        [self setMainViewOriginalParentView:superView];
-        
-        if (IS_IPHONE_5_AND_BEFORE) {
-            
-            [[[self gaView] bottomSliderWidthConstrintForIphone6Up] setActive:NO];
-            [[[self gaView] bottomSliderWidthConstrintForIphone5AndDown] setActive:YES];
-            
-            [[[self gaView] topSliderWidthConstrintForIphone6Up] setActive:NO];
-            [[[self gaView] topSliderWidthConstrintForIphone5AndDown] setActive:YES];
-            
-        }
-        else{
-            [[[self gaView] bottomSliderWidthConstrintForIphone6Up] setActive:YES];
-            [[[self gaView] bottomSliderWidthConstrintForIphone5AndDown] setActive:NO];
-            
-            [[[self gaView] topSliderWidthConstrintForIphone6Up] setActive:YES];
-            [[[self gaView] topSliderWidthConstrintForIphone5AndDown] setActive:NO];
-        }
-    
-        
-    }
-    
-    
-    
-}
 
 -(void)updateButtons{
     
@@ -577,6 +584,7 @@ NSString * _Nonnull const AVCustomPlayerWillEnterFullscreenNotification = @"AVCu
      __weak GAPlayerController *weakSelf = self;
     [UIView  moveView:[self gaView] ToWindowWithAnimationAndDuration:ANIMATION_DURATION Delay:0.0f Completion:^{
         [weakSelf setCurrentMode:GAPlayerControllerModeFullScreen];
+        [weakSelf playerDidChangeMode];
         [weakSelf updateToolBars];
         
         if (completion) {
@@ -597,6 +605,7 @@ NSString * _Nonnull const AVCustomPlayerWillEnterFullscreenNotification = @"AVCu
     [UIView moveView:[self gaView] FromWindowToView:[self mainViewOriginalParentView] toRect:[self mainViewOriginalFrame] WithAnimationAndDuration:ANIMATION_DURATION Delay:0.0f Completion:^{
         
         [weakSelf setCurrentMode:GAPlayerControllerModeSmall];
+        [weakSelf playerDidChangeMode];
         [weakSelf updateToolBars];
         
         if (completion) {
@@ -616,6 +625,7 @@ NSString * _Nonnull const AVCustomPlayerWillEnterFullscreenNotification = @"AVCu
     [UIView minimazeAnimationOnView:[self gaView] ToSuperView:superView toFrame:[self minimazeFrame] WithAnimationDuration:ANIMATION_DURATION Delay:0.0f Completion:^{
         
         [weakSelf setCurrentMode:GAPlayerControllerModeMinimize];
+        [weakSelf playerDidChangeMode];
         [weakSelf updateToolBars];
         
         if (completion) {
@@ -801,6 +811,11 @@ NSString * _Nonnull const AVCustomPlayerWillEnterFullscreenNotification = @"AVCu
     return YES;
 }
 
+-(void)playerDidChangeMode{
+  
+    [[NSNotificationCenter defaultCenter] postNotificationName:AVCustomPlayerDidChangeSreenModeNotification object:nil];
+}
+
 #pragma mark - KVO
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context{
@@ -934,6 +949,7 @@ NSString * _Nonnull const AVCustomPlayerWillEnterFullscreenNotification = @"AVCu
             [[self dragController] hendelInteractiveMinimizeWithPanGesture:recognizer OnView:[self gaView] thresHoldPoint:CGPointMake(CGRectGetMidX([[[self gaView] superview] bounds]), CGRectGetMidY([[[self gaView] superview] bounds]) - 90.0f)  SuccessCompletion:^{
                 
                 [weakSelf setCurrentMode:GAPlayerControllerModeMinimize];
+                [weakSelf playerDidChangeMode];
                 [weakSelf updateToolBars];
                 
             }FailedCompletion:nil toDestinationFame:[self minimazeFrame]];

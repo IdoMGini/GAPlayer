@@ -44,10 +44,12 @@ typedef void (^AnimationCompletion)();
 
 extern NSString * _Nonnull const AVCustomPlayerWillExitFullscreenNotification;
 extern NSString * _Nonnull const AVCustomPlayerWillEnterFullscreenNotification;
+extern NSString * _Nonnull const AVCustomPlayerDidChangeSreenModeNotification;
 
 
 @interface GAPlayerController : NSObject <GAViewDelegate>
 
+@property (nonatomic,strong,nullable,readonly)   GAView  *gaView;
 
 @property (nonatomic,nullable,copy) UIColor * barColor; // bars backgrund color can be change with set
 @property (nonatomic,nullable,copy) UIColor *textColor; // label text color can be change with set
@@ -68,6 +70,7 @@ extern NSString * _Nonnull const AVCustomPlayerWillEnterFullscreenNotification;
 // add the player view to selcted superView with add subView
 - (void)addPlayerToSuperview:(nullable UIView *)superView withItemURL:(nullable NSURL *)URLObject targetFrame:(CGRect)frame;
 - (void)addPlayerToSuperview:(nullable UIView *)superView withItemURL:(nullable NSURL *)URLObject; //set fame to default (window frame)
+- (void)addPlayerToSuperview:(nullable UIView *)superView WithPlayer:(nullable AVPlayer *)player targetFrame:(CGRect)frame;
 
 - (void)play;
 - (void)pause;
@@ -82,6 +85,8 @@ extern NSString * _Nonnull const AVCustomPlayerWillEnterFullscreenNotification;
 - (void)replaceCurrentItemWithItem:(nullable AVPlayerItem *)playerItem;
 
 - (nullable AVPlayerItem *)currentItem;
+
+- (void)setViewFrame:(CGRect)frame InSuperView:(nullable UIView *)superView;
 
 - (void)toggleFullScreenWithCompletion:(nullable AnimationCompletion)completion;
 

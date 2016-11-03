@@ -39,7 +39,11 @@
         case UIGestureRecognizerStateCancelled:
         case UIGestureRecognizerStateFailed:
             
-            failedCompletion();
+            if (failedCompletion) {
+                
+                failedCompletion();
+            }
+
             [self cleanStartData];
             break;
             
@@ -51,8 +55,8 @@
         case UIGestureRecognizerStateEnded:
             
             if (CGRectGetMidX([view frame]) < point.x) {
-               
-                [self swipeAnimationOnView:view WithCompletion:successCompletion];
+                CGFloat xPoint = CGRectGetMinX([[view superview] bounds]) - CGRectGetWidth([view frame]);
+                [self swipeAnimationOnView:view ToX:xPoint WithCompletion:successCompletion];
             }
             else{
                 
@@ -67,9 +71,56 @@
     
 }
 
--(void)swipeAnimationOnView:(UIView *)view WithCompletion:(AnimationCompletion)completion{
+
+-(void)hendelRightDragWithPanGesture:(UIPanGestureRecognizer *)recognizer OnView:(UIView *)view thresHoldPoint:(CGPoint)point SuccessCompletion:(SuccessCompletion)successCompletion FailedCompletion:(FailedCompletion)failedCompletion{
     
-    CGFloat xPoint = CGRectGetMinX([[view superview] bounds]) - CGRectGetWidth([view frame]);
+    switch ([recognizer state]) {
+        case UIGestureRecognizerStateBegan:
+            
+            [self hendelUIGestureRecognizerStateBeganWithPanGesture:recognizer OnView:view];
+            
+            break;
+            
+        case UIGestureRecognizerStateCancelled:
+        case UIGestureRecognizerStateFailed:
+            
+            if (failedCompletion) {
+            
+                failedCompletion();
+            }
+            
+            [self cleanStartData];
+            break;
+            
+        case UIGestureRecognizerStateChanged:
+            
+            [self hendelRightDragUIGestureRecognizerStateChangedWithPanGesture:recognizer OnView:view];
+            break;
+            
+        case UIGestureRecognizerStateEnded:
+            
+            if (CGRectGetMidX([view frame]) > point.x) {
+                
+                CGFloat xPoint = CGRectGetMaxX([[[[UIApplication sharedApplication] delegate] window] bounds]);
+                
+                [self swipeAnimationOnView:view ToX:xPoint WithCompletion:successCompletion];
+            }
+            else{
+                
+                [self failedAniamtionOnVIew:view WithCompletion:failedCompletion AddConstraints:NO];
+            }
+            
+            break;
+            
+        default:
+            break;
+    }
+    
+}
+
+-(void)swipeAnimationOnView:(UIView *)view ToX:(CGFloat)xPoint WithCompletion:(AnimationCompletion)completion{
+    
+   
     [UIView swipeAnimationOnView:view ToXPoint:xPoint WithAnimationDuration:0.3 Delay:0 Completion:^{
         
         [self cleanStartData];
@@ -94,7 +145,11 @@
         case UIGestureRecognizerStateCancelled:
         case UIGestureRecognizerStateFailed:
             
-            failedCompletion();
+            if (failedCompletion) {
+                
+                failedCompletion();
+            }
+
             [self cleanStartData];
             break;
             
@@ -186,6 +241,19 @@
     CGRect frame = [view frame];
     NSLog(@"deltaX = %f currentPoint.x = %f self.panStartPoint.x = %f frame.origin.x = %f",deltaX,currentPoint.x,self.panStartPoint.x,frame.origin.x);
     if (currentPoint.x < self.panStartPoint.x) {  //1
+        
+        frame.origin.x =  deltaX;
+        [view setFrame:frame];
+    }
+}
+
+-(void)hendelRightDragUIGestureRecognizerStateChangedWithPanGesture:(UIPanGestureRecognizer *)recognizer OnView:(UIView *)view{
+    
+    CGPoint currentPoint = [recognizer translationInView:view];
+    CGFloat deltaX = self.panViewStartFrame.origin.x - ( self.panStartPoint.x - currentPoint.x );
+    CGRect frame = [view frame];
+    NSLog(@"deltaX = %f currentPoint.x = %f self.panStartPoint.x = %f frame.origin.x = %f",deltaX,currentPoint.x,self.panStartPoint.x,frame.origin.x);
+    if (currentPoint.x > self.panStartPoint.x) {  //1
         
         frame.origin.x =  deltaX;
         [view setFrame:frame];

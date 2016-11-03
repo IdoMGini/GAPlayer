@@ -931,14 +931,33 @@ NSString * _Nonnull const AVCustomPlayerDidChangeSreenModeNotification  = @"AVCu
      
         if ([self currentMode] == GAPlayerControllerModeMinimize) {
             
-            __weak GAPlayerController *weakSelf = self;
+            CGFloat xPoint = CGRectGetMidX([self minimazeFrame]);
             
-            [[self dragController] hendelLeftDragWithPanGesture:recognizer OnView:[self gaView] thresHoldPoint:CGPointMake(CGRectGetMidX([[[self gaView] superview] bounds]), 0.0)
-                                              SuccessCompletion:^{
-                                                  
-                                                  [weakSelf removePlyer];
-                                                  
-                                              } FailedCompletion:nil];
+            CGFloat windowMidXPoint = CGRectGetMidX([[[[UIApplication sharedApplication] delegate] window] bounds]);
+           
+             __weak GAPlayerController *weakSelf = self;
+            
+            CGPoint thresHoldPoint = CGPointMake(CGRectGetMidX([[[self gaView] superview] bounds]), 0.0);
+            
+            if (xPoint >  windowMidXPoint) {
+            
+                [[self dragController] hendelLeftDragWithPanGesture:recognizer OnView:[self gaView] thresHoldPoint:thresHoldPoint
+                                                  SuccessCompletion:^{
+                                                      
+                                                      [weakSelf removePlyer];
+                                                      
+                                                  } FailedCompletion:nil];
+
+            }
+            else{
+                
+                [[self dragController] hendelRightDragWithPanGesture:recognizer OnView:[self gaView] thresHoldPoint:thresHoldPoint
+                                                  SuccessCompletion:^{
+                                                      
+                                                      [weakSelf removePlyer];
+                                                      
+                                                  } FailedCompletion:nil];
+            }
             
         }
         

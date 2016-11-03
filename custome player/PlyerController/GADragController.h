@@ -15,7 +15,9 @@ typedef void (^FailedCompletion)();
 
 // crate drag to view by pan Gesture add thresHoldPoint to determine whene successCompletion will cell and successCompletion
 -(void)hendelLeftDragWithPanGesture:(UIPanGestureRecognizer *)recognizer OnView:(UIView *)view thresHoldPoint:(CGPoint)point SuccessCompletion:(SuccessCompletion)successCompletion FailedCompletion:(FailedCompletion)successCompletion;
+-(void)hendelRightDragWithPanGesture:(UIPanGestureRecognizer *)recognizer OnView:(UIView *)view thresHoldPoint:(CGPoint)point SuccessCompletion:(SuccessCompletion)successCompletion FailedCompletion:(FailedCompletion)failedCompletion;
 
 -(void)hendelInteractiveMinimizeWithPanGesture:(UIPanGestureRecognizer *)recognizer OnView:(UIView *)view thresHoldPoint:(CGPoint)point SuccessCompletion:(SuccessCompletion)successCompletion FailedCompletion:(FailedCompletion)failedCompletion toDestinationFame:(CGRect)destinationFame;
+
 
 @end
